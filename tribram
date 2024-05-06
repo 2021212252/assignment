@@ -1,0 +1,72 @@
+def preprocess_sen(sentence);
+    """对句子进行预处理，返回符记列表"""
+    pattern = re.compile(r"[-\[\]()\t\n.,;!?“”‘' \\`~\s]+” )
+    tokens = pattern.split( sentence.lower() )
+    tokens.insert( 0,"<s>" )
+    tokens.insert(-1,"/s")
+    tokens =[i for i in tokens if i != ""]
+    return tokens
+
+def calc_trigram_prob(bigram, trigram, wl, w2, w3):
+"""传入训练好的二元组、三元组，以及测试的三元组，返回测试三元组的未加平滑概率"""
+# P(w3/w1,w2)= p(w1w2w3)/p(wIw2)
+fd_bigram = FreqDist( bigram )
+fd_trigram = FreqDist( trigram )
+#('the', 'company', 'said')1125
+#('the', 'company')2449
+# 0.4593711719069008
+return fd_trigram[(w1,w2,w3)]/ fd bigram[(w1, w2)]
+
+def calc_trigram laplace(unigram, bigram, trigram, wl, w2, w3):
+"""传入训练好的一元组、二元组、三元组，以及测试的三元组，返回测试三元组的加一平滑概率"""
+fd_bigram = FreqDist( bigram)
+fd_trigram = FreqDist( trigram )
+return(fd_trigram[(w1,w2,w3)]+ 1)/(fd_bigram[(w1, w2)] + len( unigram ))
+
+def calc_sen_laplace(length, fd_bigram, fd_trigram, sentence):
+"""带加一平滑的最大似然估计法估算三元语法概率，传入训练好的二元组和三元组、测试句子，返回测试句子的的对数概率"""# PLaplace(wn wn-2 wn-1)=C(wn-2 wn-1 wn)+1 /C(wn-2 wn-1)+V
+#对数的加法为Ln(MN)=ln(M)+Ln(N)
+#计算得到的对数概率如果需要转换为原始概率，只需要使用指数函数exp()对结果进行转换
+tokens = preprocess sen( sentence
+test_trigram=nltk.ngrams(tokens,3)
+print( fd_bigram, fd_trigram )
+Prob_log =0
+for trigram in test_trigram:
+print( trigram, fd_trigram[trigram],trigram[:2],fd_bigram[trigram[:2]])
+counts_trigram =fd_trigram[trigram]+ 1
+counts_bigram = fd_bigram[trigram[:2]] + length
+print( counts_trigram, counts_bigram
+Prob_log += math.log( counts_trigram /counts_bigram )
+return Prob_1og
+
+def trigrams_cfd(trigrams):
+"""传入训练好的三元组，将三元组形式重新规划，最终返回三元组的条件概率分布对象(conditionalFreqDist)"””
+#创建新列表，将三元组按[(二元组)，(后缀单词))]形式化
+trigram_list =[]
+for trigram in trigrams:
+before_turple =trigram[:2] #截取三元组中的前两个元组作为初始二元组
+after_turple = trigram[-1] # 截取三元组的最后一个元素作为后缀单词
+together_turple =(before turple,after turple) # 台并为新的元组
+trigram_list.append( together turple)#追加至列表
+#根据三元组列表生成条件概率分布，其中二元组作为条件，该二元组对应的所有后缀单词作为事件
+cfd_trigram =nltk.conditionalFreqDist( trigram list )
+return cfd_trigram
+
+def generate sentence(cfd trigram, two words, num=10):
+"""传入三元组的条件概率分布对象、句子初始单词(两个)、生成句子的长度(默认10个词)，返回生成的随机句子(字符串)"""
+sentence =two_words +""
+bigram =tuple( two_words.split())#句子起始
+# 若该条件下样本总数为0，则说明该二元组不适合作为起始
+if cfd trigram[bigram].N()== 0:
+print( "please change the begin words.")return None
+for i in range( num ):
+#当采用最大值策略时，经常出现局部循环现象
+# word = cfd_trigram[bigram].max()
+#采田随机样本，将该条件下颛次最高的前三个样本取出，并随机抽取其中一个，返回值为一个元组(单词，颛次)，最后用。下标取出单词
+next_word = random.choice( cfd_trigram[bigram].most common( 3 ))[0]
+#若抽取到开始符结束符则重新抽取
+while next_word in「"<s>","</s>","<UNK>"]:
+next_word = random.choice( cfd_trigram[bigram].most_common( 3))[0]
+bigram =(bigram[-1]，next_word) # 更新二元组为上一个二元组的未尾单词加上新的后缀单词
+sentence += next_word + ""
+return sentence
